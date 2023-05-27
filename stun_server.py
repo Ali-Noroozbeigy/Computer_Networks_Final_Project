@@ -10,6 +10,21 @@ class RequestHandler(BaseHTTPRequestHandler):
             message = "Hello!\n"
 
             self.wfile.write(bytes(message, 'utf8'))
+
+        elif self.path.startswith("/user/"):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            message = f"Hello {self.path[6:]}\n"
+
+            self.wfile.write(bytes(message, 'utf8'))
+        else:
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            message = "404 Not Found\n"
+
+            self.wfile.write(bytes(message, 'utf8'))
         return
     
     def do_POST(self):
