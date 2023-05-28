@@ -9,10 +9,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            users = {}
+            users = []
             for key in cache.scan_iter('*'):
-                value = cache.get(key)
-                users[key.decode('utf-8')] = value.decode('utf-8')
+                users.append(key.decode('utf-8'))
             
             message = json.dumps(users)
 
@@ -53,6 +52,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             dec = post_data.decode('utf-8')
             parsed = json.loads(dec)
+            # TODO: check uniqueness of username
             print(parsed['username'])
             cache.set(parsed['username'], self.client_address[0])
 
