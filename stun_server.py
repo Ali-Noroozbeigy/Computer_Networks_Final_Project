@@ -54,7 +54,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             dec = post_data.decode('utf-8')
             parsed = json.loads(dec)
             if not cache.exists(parsed['username']):
-                cache.hmset(parsed['username'], {'IP': self.client_address[0], 'PORT': self.client_address[1]})
+                cache.hmset(parsed['username'], {'IP': self.client_address[0], 'PORT': parsed['PORT']})
 
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
