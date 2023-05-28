@@ -20,21 +20,22 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.startswith("/user/"):
             username = self.path[6:]
-            ip = cache.get(username)
 
-            if ip is None:
+            if not cache.exists(username):
                 self.send_response(404)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 message = json.dumps({'response': "404 User Name Not Found\n"})
                 self.wfile.write(message.encode('utf-8'))
                 return
+
+            info = cache.hgetall(username)
             
-            ip.decode('utf-8')
+            info = {key.decode('utf-8'): value.decode('utf-8') for key, value in info.items()}
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            message = json.dumps({"IP": ip})
+            message = json.dumps(info)
             self.wfile.write(message.encode('utf-8'))
             return
         else:
@@ -54,8 +55,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             dec = post_data.decode('utf-8')
             parsed = json.loads(dec)
             # TODO: check uniqueness of username
-            print(parsed['username'])
-            cache.set(parsed['username'], self.client_address[0])
+            cache.hmset(parsed['username'], {'IP': self.client_address[0], 'PORT': self.client_address[1]})
 
             self.send_response(200)
             self.send_header('Content-type', 'text/html')

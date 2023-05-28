@@ -2,7 +2,7 @@ import requests
 
 def introduce():
     url = 'http://127.0.0.1:8000/add-user'
-    payload = {'username': 'ali'}
+    payload = {'username': 'jalal'}
     response = requests.post(url, json=payload)
     print(response.text)
 
@@ -22,7 +22,9 @@ def get_user_ip(username):
         print("INVALID USERNAME!")
         return
     
-    ip = response.json()['IP']
-    print(ip)
+    info = response.json() 
+    print(info['IP'], info['PORT'])
 
-get_user_ip('li')
+introduce()
+get_list_users()
+get_user_ip('ali')
