@@ -5,13 +5,19 @@ import redis
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/':
+        if self.path == '/users':
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            message = "Hello!\n"
+            users = {}
+            for key in cache.scan_iter('*'):
+                value = cache.get(key)
+                users[key.decode('utf-8')] = value.decode('utf-8')
+            
+            message = json.dumps(users)
 
-            self.wfile.write(bytes(message, 'utf8'))
+            self.wfile.write(message.encode('utf8'))
+            return
 
         elif self.path.startswith("/user/"):
             username = self.path[6:]
@@ -21,22 +27,23 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_response(404)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
-                message = "404 User Name Not Found\n"
-                self.wfile.write(bytes(message, 'utf8'))
+                message = json.dumps({'response': "404 User Name Not Found\n"})
+                self.wfile.write(message.encode('utf-8'))
                 return
             
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            self.wfile.write(bytes(ip, 'utf8'))
+            message = json.dumps({"IP": ip})
+            self.wfile.write(message.encode('utf-8'))
             return
         else:
             self.send_response(404)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            message = "404 Not Found\n"
+            message = json.dumps({"response": "404 Not Found\n"})
 
-            self.wfile.write(bytes(message, 'utf8'))
+            self.wfile.write(message.encode('utf-i'))
         return
     
     def do_POST(self):
