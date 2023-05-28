@@ -1,5 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import redis
+
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -28,13 +30,16 @@ class RequestHandler(BaseHTTPRequestHandler):
         return
     
     def do_POST(self):
-        if self.path == '/add-data':
+        if self.path == '/add-user':
             content_length = int(self.headers.get('Content-length', 0))
 
             post_data = self.rfile.read(content_length)
             dec = post_data.decode('utf-8')
             parsed = json.loads(dec)
-            print(parsed['message'])
+            print(parsed['username'], parsed['IP'])
+
+            cache = redis.Redis(host='localhost', port=6379, db=0)
+            cache.set(parsed['username'], parsed['IP'])
 
 
 
