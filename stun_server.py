@@ -30,6 +30,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(message.encode('utf-8'))
                 return
             
+            ip.decode('utf-8')
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
