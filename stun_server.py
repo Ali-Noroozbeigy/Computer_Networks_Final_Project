@@ -43,7 +43,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             message = json.dumps({"response": "404 Not Found\n"})
-
             self.wfile.write(message.encode('utf-8'))
         return
     
@@ -54,14 +53,22 @@ class RequestHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             dec = post_data.decode('utf-8')
             parsed = json.loads(dec)
-            # TODO: check uniqueness of username
-            cache.hmset(parsed['username'], {'IP': self.client_address[0], 'PORT': self.client_address[1]})
+            if not cache.exists(parsed['username']):
+                cache.hmset(parsed['username'], {'IP': self.client_address[0], 'PORT': self.client_address[1]})
 
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            message = json.dumps({'response': "200 OK\n"})
-            self.wfile.write(message.encode('utf-8'))
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                message = json.dumps({'response': "200 OK\n"})
+                self.wfile.write(message.encode('utf-8'))
+                return
+            else:
+                self.send_response(409)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                message = json.dumps({"response": "409 Conflict: username exits\n"})
+                self.wfile.write(message.encode('utf-8'))
+                return
         else:
             self.send_response(404)
             self.send_header('Content-type', 'text/html')
