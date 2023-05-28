@@ -16,7 +16,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             
             message = json.dumps(users)
 
-            self.wfile.write(message.encode('utf8'))
+            self.wfile.write(message.encode('utf-8'))
             return
 
         elif self.path.startswith("/user/"):
@@ -43,7 +43,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             message = json.dumps({"response": "404 Not Found\n"})
 
-            self.wfile.write(message.encode('utf-i'))
+            self.wfile.write(message.encode('utf-8'))
         return
     
     def do_POST(self):
@@ -53,12 +53,21 @@ class RequestHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             dec = post_data.decode('utf-8')
             parsed = json.loads(dec)
-            print(parsed['username'], parsed['IP'])
-            cache.set(parsed['username'], parsed['IP'])
+            print(parsed['username'])
+            cache.set(parsed['username'], self.client_address[0])
 
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
+            message = json.dumps({'response': "200 OK\n"})
+            self.wfile.write(message.encode('utf-8'))
+        else:
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            message = json.dumps({"response": "404 Not Found\n"})
+
+            self.wfile.write(message.encode('utf-8'))
 
 
 
