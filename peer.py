@@ -49,12 +49,12 @@ def wait_for_peers_to_call():
         if agree == 'Y':
             if data == 'TEXT':
                 port_as_byte = TCP_PORT.to_bytes(2, byteorder='big')
-                udp_socket.sendto(port_as_byte)
+                udp_socket.sendto(port_as_byte, addr)
                 listen_for_tcp()
             else:
                 print("THE connection wants photo :(")
         else:
-            continue
+            udp_socket.sendto(b'DECLINED', addr)
 
 
 def listen_for_tcp():
