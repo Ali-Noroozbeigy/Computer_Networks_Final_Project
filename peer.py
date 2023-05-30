@@ -43,6 +43,13 @@ def get_user_ip(username):
     return(info['IP'], info['PORT'])
 
 
+def remove_user(username):
+    url = 'http://127.0.0.1:8000/remove/'
+    payload = {'username': username}
+    requests.post(url, json=payload)
+
+
+
 def wait_for_peers_to_call():
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -93,11 +100,16 @@ def call_user(ip, port, data_type: str):
     data_type = data_type.encode('utf-8')
     udp_socket.sendto(data_type, (ip, int(port)))
 
-    data, addr = udp_socket.recvfrom(10)
+    udp_socket.settimeout(6)
+    try:
+        data, addr = udp_socket.recvfrom(10)
+    except socket.timeout:
+        print("it seems that peer is offline. try other peers.")
+        return False
     data = data.decode('utf-8')
     if data == "DECLINED":
         print("Your request declined!")
-        return
+        return False
     udp_socket.close()
     print("Request Accepted!")
     print("Establishing Connection...")
@@ -117,6 +129,7 @@ def call_user(ip, port, data_type: str):
             recv_done = True
         except socket.error as e:
             tcp_socket.send("ERROR".encode('utf-8'))
+    return True
         
 
 
@@ -128,7 +141,11 @@ choice = input('Do you want to share or get file?[s/g]')
 if choice == 's':
     wait_for_peers_to_call()
 else:
-    get_list_users()
-    target = input('Please enter a username to start: ')
-    ip, port = get_user_ip(target)
-    call_user(ip, port, 'TEXT')
+    find_peer = False
+    while not find_peer:
+        get_list_users()
+        target = input('Please enter a username to start: ')
+        ip, port = get_user_ip(target)
+        find_peer = call_user(ip, port, 'TEXT')
+        if not find_peer:
+            remove_user(target)

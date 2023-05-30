@@ -69,6 +69,23 @@ class RequestHandler(BaseHTTPRequestHandler):
                 message = json.dumps({"response": "409 Conflict: username exits\n"})
                 self.wfile.write(message.encode('utf-8'))
                 return
+        
+        elif self.path == '/remove/':
+            content_length = int(self.headers.get('Content-length', 0))
+
+            post_data = self.rfile.read(content_length)
+            dec = post_data.decode('utf-8')
+            parsed = json.loads(dec)
+
+            cache.delete(parsed['username'])
+
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            message = json.dumps({'response': "200 OK\n"})
+            self.wfile.write(message.encode('utf-8'))
+            return
+
         else:
             self.send_response(404)
             self.send_header('Content-type', 'text/html')
