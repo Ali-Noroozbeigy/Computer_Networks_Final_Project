@@ -71,15 +71,20 @@ def listen_for_tcp():
 
     conn, addr = tcp_socket.accept()
     print(f"New TCP Connection from {addr} for TEXT")
-    print("Sending File...")
-    file_size = os.path.getsize('sample.txt')
-    conn.send(str(file_size).encode('utf-8'))
 
-    with open('sample.txt', 'rb') as txt:
-        conn.send(txt.read(file_size))
-    
-    tcp_socket.close()
-    print("File Sent.")
+    send_done = False
+    while not send_done:
+        print("Sending File...")
+        file_size = os.path.getsize('sample.txt')
+        conn.send(str(file_size).encode('utf-8'))
+
+        with open('sample.txt', 'rb') as txt:
+            conn.send(txt.read(file_size))
+        
+        if conn.recv(10).decode('utf-8') == 'OK':
+            send_done = True
+            tcp_socket.close()
+            print("File Sent.")
 
 
 def call_user(ip, port, data_type: str):
@@ -101,10 +106,18 @@ def call_user(ip, port, data_type: str):
     tcp_socket.connect((ip, tcp))
     print("Connection Established.")
     size = tcp_socket.recv(4)
-    text = tcp_socket.recv(int(size.decode('utf-8')))
-    with open('received.txt', 'w') as rcv:
-        rcv.write(text.decode('utf-8'))
-    print("File received.")
+    recv_done = False
+    while not recv_done:
+        try:
+            text = tcp_socket.recv(int(size.decode('utf-8')))
+            with open('received.txt', 'w') as rcv:
+                rcv.write(text.decode('utf-8'))
+            tcp_socket.send('OK'.encode('utf-8'))
+            print("File received.")
+            recv_done = True
+        except socket.error as e:
+            tcp_socket.send("ERROR".encode('utf-8'))
+        
 
 
 introduced = False
