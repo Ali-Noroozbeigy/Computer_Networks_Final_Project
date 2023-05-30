@@ -95,12 +95,17 @@ def listen_for_tcp():
 
 
 def call_user(ip, port, data_type: str):
+    if data_type == 'TEXT':
+        return request_text(ip, port, data_type) 
+        
+
+def request_text(ip, port, data_type):
     print("Wait for user to accept...")
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     data_type = data_type.encode('utf-8')
     udp_socket.sendto(data_type, (ip, int(port)))
 
-    udp_socket.settimeout(6)
+    udp_socket.settimeout(15)
     try:
         data, addr = udp_socket.recvfrom(10)
     except socket.timeout:
@@ -130,7 +135,6 @@ def call_user(ip, port, data_type: str):
         except socket.error as e:
             tcp_socket.send("ERROR".encode('utf-8'))
     return True
-        
 
 
 introduced = False
