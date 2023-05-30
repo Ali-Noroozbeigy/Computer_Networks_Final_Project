@@ -82,5 +82,6 @@ class RequestHandler(BaseHTTPRequestHandler):
 server_address = ('', 8000)
 httpd = HTTPServer(server_address, RequestHandler)
 cache = redis.Redis(host='localhost', port=6379, db=0)
+cache.flushall()
 print("Starting server...")
 httpd.serve_forever()
