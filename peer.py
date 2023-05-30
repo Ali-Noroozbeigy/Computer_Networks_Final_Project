@@ -47,10 +47,9 @@ def wait_for_peers_to_call():
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     udp_socket.bind((HOST, UDP_PORT))
-
-    print('wait for peers to call...')
     
     while True:
+        print('wait for peers to call...')
         data, addr = udp_socket.recvfrom(1024)
         data = data.decode('utf-8')
         agree = input(f'New Connection From {addr}, asking for {data}, Agree? [Y/n]')
@@ -72,6 +71,7 @@ def listen_for_tcp():
 
     conn, addr = tcp_socket.accept()
     print(f"New TCP Connection from {addr} for TEXT")
+    print("Sending File...")
     file_size = os.path.getsize('sample.txt')
     conn.send(str(file_size).encode('utf-8'))
 
@@ -79,9 +79,11 @@ def listen_for_tcp():
         conn.send(txt.read(file_size))
     
     tcp_socket.close()
+    print("File Sent.")
 
 
 def call_user(ip, port, data_type: str):
+    print("Wait for user to accept...")
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     data_type = data_type.encode('utf-8')
     udp_socket.sendto(data_type, (ip, int(port)))
@@ -92,15 +94,17 @@ def call_user(ip, port, data_type: str):
         print("Your request declined!")
         return
     udp_socket.close()
+    print("Request Accepted!")
+    print("Establishing Connection...")
     tcp = int(data)
-    print(tcp)
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.connect((ip, tcp))
-
+    print("Connection Established.")
     size = tcp_socket.recv(4)
     text = tcp_socket.recv(int(size.decode('utf-8')))
     with open('received.txt', 'w') as rcv:
         rcv.write(text.decode('utf-8'))
+    print("File received.")
 
 
 introduced = False
