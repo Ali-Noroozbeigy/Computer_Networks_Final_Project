@@ -2,6 +2,7 @@ import requests
 import socket
 import os
 from PIL import Image
+from time import sleep
 
 UDP_PORT = 2896
 TCP_PORT = 8400
@@ -67,9 +68,8 @@ def wait_for_peers_to_call():
                 udp_socket.sendto(str(TCP_PORT).encode('utf-8'), addr)
                 listen_for_tcp()
             else:
-                udp_socket.sendto(b'START', addr)
+                udp_socket.sendto(b'OK', addr)
                 send_picture(udp_socket, addr)
-                udp_socket.sendto(b'END', addr)
         else:
             udp_socket.sendto(b'DECLINED', addr)
 
@@ -98,13 +98,26 @@ def listen_for_tcp():
 
 
 def send_picture(udp_socket: socket.socket, addr):
-    im_bytes = Image.open("./sample_pic.jpg").tobytes()
+    im = Image.open("./sample_pic.jpg")
+    im_bytes = im.tobytes()
+
+    x = im.size[0].to_bytes(4, byteorder='big')
+    y = im.size[1].to_bytes(4, byteorder='big')
+
+    udp_socket.sendto(x, addr)
+    sleep(0.01)
+    udp_socket.sendto(y, addr)
+    sleep(0.01)
 
     chunks = [im_bytes[i:i+CHUNK_SIZE] for i in range(0, len(im_bytes), CHUNK_SIZE)]
 
     for i, chunk in enumerate(chunks):
+        udp_socket.sendto(b'1', addr)
         seq_num = i.to_bytes(4, byteorder='big')
         udp_socket.sendto(seq_num + chunk, addr)
+        print(f'send chunk {int.from_bytes(seq_num, byteorder="big")}')
+        sleep(0.01)
+    udp_socket.sendto(b'0', addr)
 
 
 
@@ -123,12 +136,13 @@ def call_user(ip, port, data_type: str):
     if data == "DECLINED":
         print("Your request declined!")
         return False
-    udp_socket.close()
+    
     print("Request Accepted!")
+    udp_socket.settimeout(None)
     if data_type == 'TEXT':
         return request_text(ip, data)
     else:
-        pass
+        request_image(udp_socket)
         
 
 def request_text(ip, data):
@@ -153,8 +167,35 @@ def request_text(ip, data):
     return True
 
 
-def request_image():
-    pass
+def request_image(udp_socket: socket.socket):
+    
+    x = int.from_bytes(udp_socket.recvfrom(4)[0], byteorder='big')
+    y = int.from_bytes(udp_socket.recvfrom(4)[0], byteorder='big')
+    
+    print(x,y)
+
+    received_chunks = {}
+    
+    finished = False
+
+    while not finished:
+        data, addr = udp_socket.recvfrom(1)
+        if data.decode('utf-8') == '0':
+            finished = True
+            continue
+        data, addr = udp_socket.recvfrom(1028)
+        seq_number = int.from_bytes(data[:4], byteorder='big')
+        chunk = data[4:]
+        received_chunks[seq_number] = chunk
+        #print(f"chunk {seq_number} received!")
+    
+    sorted_chunks = [received_chunks[i] for i in range(len(received_chunks))]
+    image_bytes = b''.join(sorted_chunks)
+
+    im = Image.frombytes('RGB', (x,y), image_bytes)
+    im.save('received_img.jpg')
+
+
 
 
 introduced = False
@@ -170,6 +211,7 @@ else:
         get_list_users()
         target = input('Please enter a username to start: ')
         ip, port = get_user_ip(target)
-        find_peer = call_user(ip, port, 'TEXT')
+        data_type = 'TEXT' if input('Enter type of data: [T/P]') == 'T' else 'PICTURE'
+        find_peer = call_user(ip, port, data_type)
         if not find_peer:
             remove_user(target)
