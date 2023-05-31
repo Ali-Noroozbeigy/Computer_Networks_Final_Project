@@ -1,11 +1,12 @@
 import requests
 import socket
 import os
-
+from PIL import Image
 
 UDP_PORT = 2896
 TCP_PORT = 8400
 HOST = '127.0.0.1'
+CHUNK_SIZE = 1024
 
 
 def introduce():
@@ -66,7 +67,9 @@ def wait_for_peers_to_call():
                 udp_socket.sendto(str(TCP_PORT).encode('utf-8'), addr)
                 listen_for_tcp()
             else:
-                print("THE connection wants photo :(")
+                udp_socket.sendto(b'START', addr)
+                send_picture(udp_socket, addr)
+                udp_socket.sendto(b'END', addr)
         else:
             udp_socket.sendto(b'DECLINED', addr)
 
@@ -92,6 +95,17 @@ def listen_for_tcp():
             send_done = True
             tcp_socket.close()
             print("File Sent.")
+
+
+def send_picture(udp_socket: socket.socket, addr):
+    im_bytes = Image.open("./sample_pic.jpg").tobytes()
+
+    chunks = [im_bytes[i:i+CHUNK_SIZE] for i in range(0, len(im_bytes), CHUNK_SIZE)]
+
+    for i, chunk in enumerate(chunks):
+        seq_num = i.to_bytes(4, byteorder='big')
+        udp_socket.sendto(seq_num + chunk, addr)
+
 
 
 def call_user(ip, port, data_type: str):
