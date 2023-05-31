@@ -2,7 +2,6 @@ import requests
 import socket
 import os
 from PIL import Image
-from time import sleep
 
 UDP_PORT = 2896
 TCP_PORT = 8400
@@ -51,7 +50,6 @@ def remove_user(username):
     requests.post(url, json=payload)
 
 
-
 def wait_for_peers_to_call():
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -98,6 +96,9 @@ def listen_for_tcp():
 
 
 def send_picture(udp_socket: socket.socket, addr):
+
+    print("Start Sending file...")
+
     im = Image.open("./sample_pic.jpg")
     im_bytes = im.tobytes()
 
@@ -105,9 +106,7 @@ def send_picture(udp_socket: socket.socket, addr):
     y = im.size[1].to_bytes(4, byteorder='big')
 
     udp_socket.sendto(x, addr)
-    sleep(0.01)
     udp_socket.sendto(y, addr)
-    sleep(0.01)
 
     chunks = [im_bytes[i:i+CHUNK_SIZE] for i in range(0, len(im_bytes), CHUNK_SIZE)]
 
@@ -115,10 +114,10 @@ def send_picture(udp_socket: socket.socket, addr):
         udp_socket.sendto(b'1', addr)
         seq_num = i.to_bytes(4, byteorder='big')
         udp_socket.sendto(seq_num + chunk, addr)
-        print(f'send chunk {int.from_bytes(seq_num, byteorder="big")}')
-        sleep(0.01)
+        # print(f'send chunk {int.from_bytes(seq_num, byteorder="big")}')
     udp_socket.sendto(b'0', addr)
 
+    print("File sent Successfully!")
 
 
 def call_user(ip, port, data_type: str):
@@ -142,7 +141,7 @@ def call_user(ip, port, data_type: str):
     if data_type == 'TEXT':
         return request_text(ip, data)
     else:
-        request_image(udp_socket)
+        return request_image(udp_socket)
         
 
 def request_text(ip, data):
@@ -169,10 +168,10 @@ def request_text(ip, data):
 
 def request_image(udp_socket: socket.socket):
     
+    print("Start receiving file...")
+    
     x = int.from_bytes(udp_socket.recvfrom(4)[0], byteorder='big')
     y = int.from_bytes(udp_socket.recvfrom(4)[0], byteorder='big')
-    
-    print(x,y)
 
     received_chunks = {}
     
@@ -195,7 +194,9 @@ def request_image(udp_socket: socket.socket):
     im = Image.frombytes('RGB', (x,y), image_bytes)
     im.save('received_img.jpg')
 
+    print("File Received Successfully!")
 
+    return True
 
 
 introduced = False
