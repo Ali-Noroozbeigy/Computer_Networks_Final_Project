@@ -109,15 +109,9 @@ def send_picture(udp_socket: socket.socket, addr):
 
 
 def call_user(ip, port, data_type: str):
-    if data_type == 'TEXT':
-        return request_text(ip, port, data_type) 
-        
-
-def request_text(ip, port, data_type):
     print("Wait for user to accept...")
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    data_type = data_type.encode('utf-8')
-    udp_socket.sendto(data_type, (ip, int(port)))
+    udp_socket.sendto(data_type.encode('utf-8'), (ip, int(port)))
 
     udp_socket.settimeout(15)
     try:
@@ -131,6 +125,14 @@ def request_text(ip, port, data_type):
         return False
     udp_socket.close()
     print("Request Accepted!")
+    if data_type == 'TEXT':
+        return request_text(ip, data)
+    else:
+        pass
+        
+
+def request_text(ip, data):
+    
     print("Establishing Connection...")
     tcp = int(data)
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -149,6 +151,10 @@ def request_text(ip, port, data_type):
         except socket.error as e:
             tcp_socket.send("ERROR".encode('utf-8'))
     return True
+
+
+def request_image():
+    pass
 
 
 introduced = False
